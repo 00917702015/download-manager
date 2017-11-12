@@ -1,60 +1,66 @@
-import click
 import requests
-import threading
+import os
+import time
+def download():
+        CHUNK_SIZE = 8192
+        bytes_read = 0
+        checkdir()
+        url = input("Enter the download link ")
+        r = requests.get(url,allow_redirects=True,stream=True)
+        filename = os.path.basename(url)
+        url = r.url
+        total_bytes =len(r.content)
+        file_name,extension=os.path.splitext(filename)
+        path = setpath(extension,filename)
+        if os.path.exists(path):
+                print("File already exists")
+        else:
+                with open(path,"ab") as file:
+                        itr_count = 1
+                        for chunk in r.iter_content(CHUNK_SIZE):
+                                itr_count = itr_count+1
+                                file.write(chunk)
+                                bytes_read += len(chunk)
+                                progress = 100* float(bytes_read)/float(total_bytes)
+                                print("progress: %d"% (progress))
 
-# The below code is used for each chunk of file handled
-# by each thread for downloading the content from specified
-# location to storage
-def Handler(start, end, url, filename):
+                r.close()
+def setpath(extension,file_name):
+        if extension == ".png" or extension == ".jpg" or extension == ".bmp" or extension == ".gif":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Images",file_name)
+                return path
+        elif extension == ".zip" or extension == ".rar" or extension == ".7z":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Compressed",file_name)
+                return path
+        elif extension == ".mp4" or extension == ".webm" or extension == ".avi" or extension == ".mkv" or extension == ".flv":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Videos",file_name)
+                return path
+        elif extension == ".doc" or extension ==".docx" or extension == ".pdf" or extension == ".epub" or extension == ".djvu" or extension == ".txt" or extension == ".log" or extension == ".ini":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Documents",file_name)
+                return path
+        elif extension == ".mp3" or extension == ".wav" or extension == ".aac" or extension == ".flac":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Music",file_name)
+                return path
+        elif extension == ".exe":
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Programs",file_name)
+                return path
+        else:
+                path=os.path.join(os.path.dirname(os.path.abspath(__file__)),"Others",file_name)
+                return path
+def checkdir():
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Programs")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Programs"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Images")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Images"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Music")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Music"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Compressed")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Compressed"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Others")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Others"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Videos")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Videos"))
+        if os.path.isdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Documents")) == False:
+                os.mkdir(os.path.join(os.path.dirname(os.path.abspath(__file__)),"Documents"))
 
-    # specify the starting and ending of the file
-    headers = {'Range': 'bytes=%d-%d' % (start, end)}
-
-    # request the specified part and get into variable
-    r = requests.get(url, headers=headers, stream=True)
-
-    # open the file and write the content of the html page
-    with open(filename, "r+b") as fp:
-
-        fp.seek(start)
-        var = fp.tell()
-        fp.write(r.content)
-@click.command(help="It downloads the specified file with specified name")
-@click.option('—number_of_threads',default=4, help="No of Threads")
-@click.option('--name',type=click.Path(),help="Name of the file with extension")
-@click.argument('url_of_file',type=click.Path())
-@click.pass_context
-def download_file(ctx,url_of_file,name,number_of_threads):
-    r = requests.head(url_of_file)
-    if name:
-        file_name = name
-    else:
-        file_name = url_of_file.split('/')[-1]
-    try:
-        file_size = int(r.headers['content-length'])
-    except:
-        print ("Invalid URL")
-        return
-
-    part = int(file_size) / number_of_threads
-    fp = open(file_name, "wb")
-    fp.write('\0' * file_size)
-    fp.close()
-    for i in range(number_of_threads):
-        start = part * i
-        end = start + part
-
-        # create a Thread with start and end locations
-        t = threading.Thread(target=Handler,
-            kwargs={'start': start, 'end': end, 'url': url_of_file, 'filename': file_name})
-        t.setDaemon(True)
-        t.start()
-    main_thread = threading.current_thread()
-    for t in threading.enumerate():
-        if t is main_thread:
-            continue
-        t.join()
-    print ('%s downloaded' % file_name)
-
-if __name__ == '__main__':
-    download_file(obj={})
+download()
