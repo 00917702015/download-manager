@@ -22,11 +22,11 @@ def download(url):
         r.close()
 def setpath(r,filename,url):
         file_name,extension = os.path.splitext(filename)
-        extension=extension.split("?")[0]
+        extension = extension.split("?")[0]
+        extension = extension[1:]
         file_name = file_name[:100].split("?")[0]
         content_type = r.headers['content-type']
         file_type,file_extension=content_type.split("/")
-        file_extension = "." + file_extension
         file_type = file_type.title()
         if content_type == "application/octet-stream" or not content_type :
                 file_extension = extension
@@ -35,7 +35,9 @@ def setpath(r,filename,url):
                 file_type = file_extension.split("-")[2].title()
                 file_extension = file_extension.split("-")[1]
         if file_type == "Program" :
-                file_type= "Application"
+                file_type = "Application"
+                file_extension = extension
+        file_extension = "." + file_extension
         file_name = file_name + file_extension
         path = os.path.join(os.path.dirname(os.path.abspath(__file__)),file_type,file_name)
         if os.path.exists(path):
